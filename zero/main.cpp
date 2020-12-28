@@ -3,8 +3,10 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <sstream>
 #include "vecmath.h"
-#include <cassert>
+
+#define MAX_BUFFER_SIZE 1024
 using namespace std;
 
 // Globals
@@ -20,8 +22,11 @@ vector<vector<unsigned> > vecf;
 
 
 // You will need more global variables to implement color and position changes
+int colorIndex = 0;
+float first = 1.0f;
+float second = 1.0f;
 
-
+void drawInput();
 // These are convenience functions which allow us to call OpenGL 
 // methods on Vec3d objects
 inline void glVertex(const Vector3f &a) 
@@ -30,25 +35,6 @@ inline void glVertex(const Vector3f &a)
 inline void glNormal(const Vector3f &a) 
 { glNormal3fv(a); }
 
-
-int col_idx = 0;
-int theta = 0;
-bool start = false;
-bool gMousePressed = false;
-int interval = 100;
-int list_id;
-int gButton;
-
-#define PI 3.14159265
-void timeFunc(int t)
-{
-    if(start) {
-        theta += 5;
-        theta %= 360;	
-    }
-    glutPostRedisplay();
-    glutTimerFunc(interval, timeFunc, 0);
-}
 
 // This function is called whenever a "Normal" key press is received.
 void keyboardFunc( unsigned char key, int x, int y )
@@ -60,12 +46,9 @@ void keyboardFunc( unsigned char key, int x, int y )
         break;
     case 'c':
         // add code to change color here
-        col_idx = (++col_idx)%4;
+	++colorIndex;	
+	//	cout << "Unhandled key press " << key << "." << endl; 
         break;
-    case 'r':
-	    if(start) start = false;
-	    else  start = true;
-	    break;
     default:
         cout << "Unhandled key press " << key << "." << endl;        
     }
@@ -74,7 +57,6 @@ void keyboardFunc( unsigned char key, int x, int y )
     glutPostRedisplay();
 }
 
-GLfloat Lt0pos[] = {1.0f, 1.0f, 5.0f, 1.0f};
 // This function is called whenever a "Special" key press is received.
 // Right now, it's handling the arrow keys.
 void specialFunc( int key, int x, int y )
@@ -83,124 +65,29 @@ void specialFunc( int key, int x, int y )
     {
     case GLUT_KEY_UP:
         // add code to change light position
-        Lt0pos[1] += 0.5;
+	second += 0.5f;
+	//	cout << "Unhandled key press: up arrow." << endl;
 		break;
     case GLUT_KEY_DOWN:
         // add code to change light position
-        Lt0pos[1] -= 0.5;
+	second -= 0.5f;
+	//	cout << "Unhandled key press: down arrow." << endl;
 		break;
     case GLUT_KEY_LEFT:
         // add code to change light position
-        Lt0pos[0] -= 0.5;
+	first -= 0.5f;
+	//	cout << "Unhandled key press: left arrow." << endl;
 		break;
     case GLUT_KEY_RIGHT:
         // add code to change light position
-        Lt0pos[0] += 0.5;
+	first += 0.5f;
+	//	cout << "Unhandled key press: right arrow." << endl;
 		break;
     }
+
 	// this will refresh the screen so that the user sees the light position
     glutPostRedisplay();
 }
-
-
-int     width, height;
-int     startClickX, startClickY;
-Matrix4f startRot;
-Matrix4f currentRot;
-
-void mouseFunc(int button, int state, int x, int y)
-{
-	startClickX = x;
-	startClickY = y;
-	gButton = button;
-
-	if(state == GLUT_DOWN) {
-		gMousePressed = true;	
-		switch(button) {
-		case GLUT_LEFT_BUTTON:
-			currentRot = startRot;
-			break;
-		case GLUT_MIDDLE_BUTTON:
-		case GLUT_RIGHT_BUTTON:
-		default:
-			break;
-		}
-	}
-	else {
-		startRot = currentRot;
-		gMousePressed = false;
-	}
-//	glutPostRedisplay();
-}
-
-void arcBallRotation(int x, int y)
-{
-	float sx, sy, sz;
-	float ex, ey, ez;
-	float sl, el;
-	float scale, dotp;
-
-	sx = startClickX - width / 2.0;	// the center of the windows is origin 
-	sy = startClickY - height / 2.0;	
-	ex = x - width / 2.0;
-	ey = y - height / 2.0;
-	
-	sy = -sy; // Y is up
-	ey = -ey;
-
-	scale = (float)(width > height ? height: width);
-	scale = 1.0 / scale;
-	
-	sx *= scale;
-	sy *= scale;
-	ex *= scale;
-	ey *= scale;
-	
-	sl = hypot(sx, sy);
-	el = hypot(ex, ey);
-	if(sl > 1.0) {
-		sx /= sl;
-		sy /= sl;
-		sl = 1.0;
-	}
-	if(el > 1.0) {
-		ex /= el;
-		sy /= el;
-		el = 1.0;
-	}
-	// project to a unit sphere;
-	sz = sqrt(1.0 - sl * sl);
-	ez = sqrt(1.0 - el * el);
-	
-	dotp = sx * ex + sy * ey + sz * ez;
-	if(dotp !=  1) { // if parrallel
-		Vector3f axis(sy * ez - ey * sz, sz * ex - ez * sx, sx * ey - ex * sy);
-		axis.normalize();
-		float angle =  acos(dotp);// why 2 ??
-		currentRot = Matrix4f::rotation(axis, angle);
-		currentRot = currentRot * startRot;
-	}
-	else {
-		currentRot = startRot;
-	}
-}
-
-void motionFunc(int x, int y)
-{
-	switch(gButton){
-	case GLUT_LEFT_BUTTON:
-		arcBallRotation(x, y);
-		break;
-	case GLUT_MIDDLE_BUTTON:
-		break;
-	case GLUT_RIGHT_BUTTON:
-		break;
-	default:
-		break;	
-	}
-	glutPostRedisplay();
-}
-
 
 // This function is responsible for displaying the object.
 void drawScene(void)
@@ -216,16 +103,10 @@ void drawScene(void)
 
     // Position the camera at [0,0,5], looking at [0,0,0],
     // with [0,1,0] as the up direction.
-#if 0
-    gluLookAt(5.0 * sin(theta * PI/180), 0.0, 5.0 * cos(theta * PI/180),
-              0.0, 0.0, 0.0,
-              0.0, 1.0, 0.0);// we may rotate the camera or the object
-#endif
-#if 1
     gluLookAt(0.0, 0.0, 5.0,
               0.0, 0.0, 0.0,
               0.0, 1.0, 0.0);
-#endif
+
     // Set material properties of object
 
 	// Here are some colors you might use - feel free to add more
@@ -235,7 +116,7 @@ void drawScene(void)
                                  {0.3, 0.8, 0.9, 1.0} };
     
 	// Here we use the first color entry as the diffuse color
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, diffColors[col_idx]);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, diffColors[colorIndex%4]);
 
 	// Define specular color and shininess
     GLfloat specColor[] = {1.0, 1.0, 1.0, 1.0};
@@ -250,21 +131,16 @@ void drawScene(void)
     // Light color (RGBA)
     GLfloat Lt0diff[] = {1.0,1.0,1.0,1.0};
     // Light position
+	GLfloat Lt0pos[] = {first, second, 5.0f, 1.0f};
 
     glLightfv(GL_LIGHT0, GL_DIFFUSE, Lt0diff);
     glLightfv(GL_LIGHT0, GL_POSITION, Lt0pos);
 
-	glPushMatrix(); // push matrix here so will not disturbe the light position
-
-	glMultMatrixf(currentRot); // here mult and rotate can not exchange
-								// please check why ??
-    glRotated(theta, 0, 1, 0); // we may rotate the object or the camera
-
-    glCallList(list_id);
-	glPopMatrix();
 	// This GLUT method draws a teapot.  You should replace
 	// it with code which draws the object you loaded.
-//	glutSolidTeapot(1.0);
+	// glutSolidTeapot(1.0);
+	drawInput();
+	
     
     // Dump the image to the screen.
     glutSwapBuffers();
@@ -278,32 +154,6 @@ void initRendering()
     glEnable(GL_DEPTH_TEST);   // Depth testing must be turned on
     glEnable(GL_LIGHTING);     // Enable lighting calculations
     glEnable(GL_LIGHT0);       // Turn on light #0.
-
-    list_id = glGenLists(1);
-    assert(list_id != 0);
-
-    glNewList(list_id, GL_COMPILE);
-// better to use vertex array
-    vector<vector<unsigned> >::iterator itr0;
-        glBegin(GL_TRIANGLES);
-            for(itr0=vecf.begin(); itr0 != vecf.end(); ++itr0){
-                glNormal3f(vecn[(*itr0)[3]-1][0], vecn[(*itr0)[3]-1][1],
-                           vecn[(*itr0)[3]-1][2]);
-                glVertex3f(vecv[(*itr0)[0]-1][0], vecv[(*itr0)[0]-1][1], 
-                           vecv[(*itr0)[0]-1][2]);
-                glNormal3f(vecn[(*itr0)[4]-1][0], vecn[(*itr0)[4]-1][1],
-                           vecn[(*itr0)[4]-1][2]);
-                glVertex3f(vecv[(*itr0)[1]-1][0], vecv[(*itr0)[1]-1][1], 
-                           vecv[(*itr0)[1]-1][2]);
-                glNormal3f(vecn[(*itr0)[5]-1][0], vecn[(*itr0)[5]-1][1],
-                           vecn[(*itr0)[5]-1][2]);
-                glVertex3f(vecv[(*itr0)[2]-1][0], vecv[(*itr0)[2]-1][1], 
-                           vecv[(*itr0)[2]-1][2]);
-            }
-        glEnd();
-    glEndList();
-	startRot = Matrix4f::identity();
-	currentRot = Matrix4f::identity();
 }
 
 // Called when the window is resized
@@ -317,8 +167,6 @@ void reshapeFunc(int w, int h)
         glViewport(0, (h - w) / 2, w, w);
     }
 
-	width = w;
-	height = h;
     // Set up a perspective view, with square aspect ratio
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -326,54 +174,74 @@ void reshapeFunc(int w, int h)
     gluPerspective(50.0, 1.0, 1.0, 100.0);
 }
 
-
-#define MAX_SIZE 256
 void loadInput()
 {
 	// load the OBJ file here
-	char buffer[MAX_SIZE];
-	while(cin.getline(buffer, MAX_SIZE)) {
-		stringstream ss(buffer);
-		Vector3f v;
-		string s;
-
-		ss >> s;
-		if(s == "v"){
-			ss >> v[0] >> v[1] >> v[2];
-			vecv.push_back(v);
-		}
-		else if(s == "vn") {
-			ss >> v[0] >> v[1] >> v[2];
-			vecn.push_back(v);
-		}
-		else if(s == "f"){
-			int a, b, c, d, e, f, g, h, i;
-			char ch;
-			vector<unsigned> vec;
-			ss  >> a >> ch >> b >> ch >> c;
-			ss	>> d >> ch >> e >> ch >> f;
-			ss	>> g >> ch >> h >> ch >> i;
-			// i changed the sequence maybe better for vertex array
-			// the vertex index
-			vec.push_back(a); vec.push_back(d); vec.push_back(g);
-			// not used now
-			vec.push_back(c); vec.push_back(f); vec.push_back(i);
-			// the normal index 
-			vec.push_back(b); vec.push_back(e); vec.push_back(h);
-			vecf.push_back(vec);
 	
-		}
-		else {
-			continue;	
-		}
+   char buffer[MAX_BUFFER_SIZE];
+   while (cin.getline(buffer, MAX_BUFFER_SIZE)) {
+	stringstream ss(buffer);
+	string s;
+	ss >> s;
+	if (s == "v"){
+		Vector3f v;
+		ss >> v[0] >> v[1] >> v[2];
+		vecv.push_back(v);	
 	}
-	return;
+	if (s == "vn") {
+		Vector3f v;
+		ss >> v[0] >> v[1] >> v[2];
+		vecn.push_back(v);	
+	}
+	if (s == "f") {
+		int a, b, c, d, e, f, g, h, i;
+		char delim;
+		ss >> a >> delim >> b >> delim >> c;
+		ss >> d >> delim >> e >> delim >> f;
+		ss >> g >> delim >> h >> delim >> i;
+
+		vector<unsigned> face;
+		face.push_back(a);
+		face.push_back(c);
+		face.push_back(d);
+		face.push_back(f);
+		face.push_back(g);
+		face.push_back(i);
+		vecf.push_back(face);
+	}
+
+	
+    }
+
+
+}
+
+void drawInput() {
+
+	for (int x = 0; x < vecf.size();++x) {
+	        // draw object 
+		int a = vecf[x][0];
+		int c = vecf[x][1];
+		int d = vecf[x][2];
+		int f = vecf[x][3];
+		int g = vecf[x][4];
+		int i = vecf[x][5];
+		glBegin(GL_TRIANGLES);
+		glNormal3d(vecn[c-1][0],vecn[c-1][1],vecn[c-1][2]);
+		glVertex3d(vecv[a-1][0],vecn[a-1][1],vecn[a-1][2]);
+		glNormal3d(vecn[f-1][0],vecn[f-1][1],vecn[f-1][2]);
+		glVertex3d(vecv[d-1][0],vecn[d-1][1],vecn[d-1][2]);
+		glNormal3d(vecn[i-1][0],vecn[i-1][1],vecn[i-1][2]);
+		glVertex3d(vecv[g-1][0],vecn[g-1][1],vecn[g-1][2]);
+		glEnd();
+	}
 }
 
 // Main routine.
 // Set up OpenGL, define the callbacks and start the main loop
 int main( int argc, char** argv )
 {
+
     loadInput();
 
     glutInit(&argc,argv);
@@ -398,13 +266,8 @@ int main( int argc, char** argv )
 
     // Call this whenever window needs redrawing
     glutDisplayFunc( drawScene );
-    // Start the main loop.  glutMainLoop never returns.
-//    glutIdleFunc(timeFunc);
-    glutTimerFunc(interval, timeFunc, 0);
-	
-	glutMouseFunc(mouseFunc);
-	glutMotionFunc(motionFunc);
 
+    // Start the main loop.  glutMainLoop never returns.
     glutMainLoop( );
 
     return 0;	// This line is never reached.
