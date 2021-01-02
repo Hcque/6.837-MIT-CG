@@ -19,6 +19,48 @@ namespace
     
 }
     
+// concat vectors
+Curve concat(Curve& left, Curve& right) {
+	
+	for (int i = 0; i < right.size(); ++i) {
+
+		left.push_back(right[i]);
+	}
+	return left;
+}
+
+// recursive imple
+Curve deCast(Vector3f p0, Vector3f p1, Vector3f p2, Vector3f p3, int times) {
+
+	if (times <= 0) return Curve();
+	Vector3f p01 = ( p0 + p1 ) / 2;
+	Vector3f p12 = ( p1 + p2 ) / 2;
+	Vector3f p23 = ( p2 + p3 ) / 2;
+	Vector3f e0 = ( p01 + p12 ) / 2;
+	Vector3f e1 = ( p12 + p23 ) / 2;
+	Vector3f mid = ( e0 + e1 ) / 2;
+
+	Vector3f T = (p3 - p2) - (p1 - p0);
+	T.normalize();
+
+	Vector3f N = T / Vector3f::dot(T, T);
+	Vector3f B = Vector3f::cross(T, N);
+
+	CurvePoint midPoint = {
+		mid,
+		T,
+		N,
+		B
+	};
+
+	times--;
+
+	Curve left = deCast(p0, p01, e0, mid, times);
+	Curve right = deCast(mid, e1, p23, p3, times);
+	left.push_back(midPoint);
+	return concat(left, right);
+
+}
 
 Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
 {
@@ -49,77 +91,34 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
     cerr << "\t>>> evalBezier has been called with the following input:" << endl;
 
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
-    for( unsigned i = 0; i < P.size(); ++i )
+
+    Curve result;
+    steps = steps / (P.size() / 3);
+    for( unsigned i = 0; i < P.size()-3; ++i )
     {
         cerr << "\t>>> " << P[i] << endl;
+	
+	// get 4 points
+	Vector3f p0 = P[i+0];
+	Vector3f p1 = P[i+1];
+	Vector3f p2 = P[i+2];
+	Vector3f p3 = P[i+3];
+
+	// using de castjou
+	Curve onepiece = deCast(p0, p1, p2, p3, steps);
+	result = concat(result, onepiece);
+	
+	i += 3;
+
     }
 
     cerr << "\t>>> Steps (type steps): " << steps << endl;
     cerr << "\t>>> Returning empty curve." << endl;
-	Curve curve;
-	Vector3f Bi_1;
-	unsigned short seed = 0;
-	Bi_1 = Vector3f(erand48(&seed), 0.0, 1.0);
-	Bi_1.normalize(); // it is likely that B0 will not parallel to T1
-	Vector3f T1 = -3 * P[0] + 3 * P[1];
-	T1.normalize();
-	if( 1 - Vector3f::dot(T1, Bi_1) < 1e-4){
-		Bi_1.y() = 1.0;
-		Bi_1.normalize();
-	}
-
-	for(float t = 0; t < 1.0; t += 1.0/steps) {
-		float _1_t = 1 - t;
-		CurvePoint point;
-		point.V = _1_t * _1_t * _1_t * P[0] 
-					+ 3 * t * _1_t * _1_t * P[1] 
-					+ 3 * t * t * _1_t * P[2]
-					+ t * t * t * P[3];
-	
-		point.T = -3 * _1_t * _1_t * P[0]
-					+ (3 * _1_t * _1_t - 6 * t * t) * P[1]
-					+ (6 * t - 9 * t * t) * P[2]
-					+ 3 * t * t * P[3];
-		point.T.normalize();
-		point.N = Vector3f::cross(Bi_1 , point.T);
-		point.N.normalize();
-		point.B = Vector3f::cross(point.T, point.N);
-		point.B.normalize();
-		Bi_1 = point.B;
-		curve.push_back(point);
-	}
-
-	return curve;
     // Right now this will just return this empty curve.
 //    return Curve();
+	
+    return result;
 }
-
-/*
-void do_add_point(const Vector3f& P0, const Vector3f& P1, 
-				const Vector3f& P2, const Vector3f& P3, Curve& curve)
-{
-	for(float t = 0; t < 1.0; t += 1.0/steps) {
-		float _1_t = 1 - t;
-		CurvePoint point;
-		point.V = 1.0/6 *_1_t * _1_t * _1_t * P0
-                    + 1.0/6 * (3 * t * t * t - 6 * t * t + 4) * P1
-                    + 1.0/6 * (-3 * t * t * t + 3 * t * t + 3 * t + 1) * P2
-                    + 1.0/6 * t * t * t * P3;
-
-		point.T = -1/2.0 * _1_t * _1_t * P0
-                    + 1/2.0 * (3 * t * t - 4 * t) * P1
-                    + 1/2.0 * (-3 * t * t + 2 * t + 1) * P2
-                    + 1/2.0 * t * t * P3;
-		point.T.normalize();
-		point.N = Vector3f::cross(Bi_1 , point.T);
-		point.N.normalize();
-		point.B = Vector3f::cross(point.T, point.N);
-		point.B.normalize();
-		Bi_1 = point.B;
-		curve.push_back(point);
-	}
-}
-*/
 
 Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
 {
