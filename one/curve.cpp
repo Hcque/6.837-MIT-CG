@@ -137,52 +137,56 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
     cerr << "\t>>> evalBSpline has been called with the following input:" << endl;
 
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
-    for( unsigned i = 0; i < P.size(); ++i )
-    {
-        cerr << "\t>>> " << P[i] << endl;
-    }
+
+    // useful matrix
+    Matrix4f B_bezier(1,-3,3,-1,
+		   0,3,-6,3,
+		   0,0,3,-3,
+		   0,0,0,1);
+
+    double f = 1.f/6; 
+    Matrix4f B_bspline(1*f,-3*f,3*f,-1*f,
+		   4*f,0,-6*f,3*f,
+		   1*f,3*f,3*f,-3*f,
+		   0,0,0,1*f);
+
 
     Curve curve;
-    Vector3f Bi_1;
-    unsigned short seed = 0;
-    Bi_1 = Vector3f(erand48(&seed), 0.0, 1.0);
-    Bi_1.normalize(); // it is likely that B0 will not parallel to T1
-    Vector3f T1 = - 1.0/2 * P[0] + 1.0/2 * P[2];
-    T1.normalize();
-    if(1 - Vector3f::dot(T1, Bi_1) < 1e-4){
-        Bi_1.y() = 1.0;
-        Bi_1.normalize();
-    }
-	for(unsigned int i = 0; i < P.size() - 3; i += 1) {
-		Vector3f P0, P1, P2, P3;
-		if(i == P.size() -3) {
-			P0 = P[i]; P1 = P[i+1]; P2 = P[i+2]; P3 = P[i+2];
-		}
-		else {
-			P0 = P[i]; P1 = P[i+1]; P2 = P[i+2]; P3 = P[i+3];
-		}
-	    for(float t = 0; t < 1.0; t += 1.0/steps) {
-    	    float _1_t = 1 - t;
-	        CurvePoint point;
-	        point.V = 1.0/6 *_1_t * _1_t * _1_t * P0
-                    + 1.0/6 * (3 * t * t * t - 6 * t * t + 4) * P1
-                    + 1.0/6 * (-3 * t * t * t + 3 * t * t + 3 * t + 1) * P2
-                    + 1.0/6 * t * t * t * P3;
+    for( unsigned i = 0; i < P.size()-3; ++i )
+    {
+        cerr << "\t>>> " << P[i] << endl;
+	// get 4 control points
+	Vector4f p0(P[i+0],1);
+	Vector4f p1(P[i+1],1);
+	Vector4f p2(P[i+2], 1);
+	Vector4f p3(P[i+3], 1);
+	// get benzier points
+	Curve benzierCurve = evalBezier(P, steps);
+	
+	// get T, curve = GBT
+	Matrix4f G(p0,p1,p2,p3,true);
+	Matrix4f inv = (G * B_bezier);
+	inv.inverse(false, 0.01);
+	Vector4f T = inv * p0;
+	
+	// get Bspline points
+	Vector4f ans = G * B_bspline * T;
 
-	        point.T = -1/2.0 * _1_t * _1_t * P0
-                    + 1/2.0 * (3 * t * t - 4 * t) * P1
-                    + 1/2.0 * (-3 * t * t + 2 * t + 1) * P2
-                    + 1/2.0 * t * t * P3;
-	        point.T.normalize();
-	        point.N = Vector3f::cross(Bi_1 , point.T);
-	        point.N.normalize();
-	        point.B = Vector3f::cross(point.T, point.N);
-	        point.B.normalize();
-	        Bi_1 = point.B;
-	        curve.push_back(point);
-	    }
-	}
-	//curve.push_back(curve[0]);
+	// push_back
+	Vector3f ans3f(ans.x(), ans.y(), ans.z());
+
+	Vector3f Tc = 
+
+	CurvePoint res = {
+		ans3f,
+		Tc,
+		Nc,
+		Bc};
+	curve.push_back(res);
+
+	i += 3;
+    }
+
     cerr << "\t>>> Steps (type steps): " << steps << endl;
     cerr << "\t>>> Returning bsp curve." << endl;
 
