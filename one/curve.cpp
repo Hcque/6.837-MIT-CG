@@ -4,6 +4,7 @@
 #include <windows.h>
 #endif
 #include <GL/gl.h>
+#include <cmath>
 using namespace std;
 
 namespace
@@ -18,11 +19,25 @@ namespace
 
     
 }
-    
+
+
+Matrix4f B_bezier(1,-3,3,-1,
+        0,3,-6,3,
+        0,0,3,-3,
+        0,0,0,1);
+
+Matrix4f B_bezier_inv = B_bezier.inverse();
+
+double f = 1.f/6; 
+Matrix4f B_bspline(1*f,-3*f,3*f,-1*f,
+        4*f,0,-6*f,3*f,
+        1*f,3*f,3*f,-3*f,
+        0,0,0,1*f);
+
 // concat vectors
 Curve concat(Curve& left, Curve& right) {
 	
-	for (int i = 0; i < right.size(); ++i) {
+	for (unsigned i = 0; i < right.size(); ++i) {
 
 		left.push_back(right[i]);
 	}
@@ -93,6 +108,8 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
 
     Curve result;
+
+    /*
     steps = steps / (P.size() / 3);
     for( unsigned i = 0; i < P.size()-3; ++i )
     {
@@ -107,6 +124,62 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
 	// using de castjou
 	Curve onepiece = deCast(p0, p1, p2, p3, steps);
 	result = concat(result, onepiece);
+	
+	i += 3;
+
+    }
+    */
+
+
+
+    int innerSteps = steps / (P.size() / 4);
+    for( unsigned i = 0; i < P.size()-3; ++i )
+    {
+        cerr << "\t>>> " << P[i] << endl;
+	
+	// get 4 points
+	Vector4f p0(P[i+0], 1.0);
+	Vector4f p1(P[i+1], 1.0);
+	Vector4f p2(P[i+2], 1.0);
+	Vector4f p3(P[i+3], 1.0);
+
+	// direct compute 
+        // cout << innerSteps << endl;
+	for (int p = 1; p < innerSteps; ++p) {
+		float t = (float)p / innerSteps;
+        cout << "t: " << t << endl;
+        Vector4f PowerBasis(1, t, t*t, pow(t, 3));
+        Vector4f PowerDerivtive(0, 1, 2*t, 3*t*t);
+
+		Matrix4f G(p0, p1, p2, p3);
+
+        Matrix4f coef(G * B_bezier);
+		// Vector4f pos(coef * PowerBasis);
+		Vector3f pos3f = (coef * PowerBasis).xyz();
+        cout << "out:" << endl;
+        cout << pos3f.x() << " "
+        << pos3f.y() << " "
+        << pos3f.z()  << endl;
+
+        // cout << pos3f << endl;
+
+		Vector3f T = (coef * PowerDerivtive).xyz();
+        T.normalize();
+
+        Vector3f N = T / Vector3f::dot(T, T);
+        Vector3f B = Vector3f::cross(T, N);
+
+        CurvePoint o = {
+            pos3f, T, N, B
+        };
+
+        result.push_back(o);
+
+		
+	}
+		
+
+	// result = concat(result, onepiece);
 	
 	i += 3;
 
@@ -139,19 +212,7 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
 
     // useful matrix
-    Matrix4f B_bezier(1,-3,3,-1,
-		   0,3,-6,3,
-		   0,0,3,-3,
-		   0,0,0,1);
-
-    double f = 1.f/6; 
-    Matrix4f B_bspline(1*f,-3*f,3*f,-1*f,
-		   4*f,0,-6*f,3*f,
-		   1*f,3*f,3*f,-3*f,
-		   0,0,0,1*f);
-
-
-    Curve curve;
+    vector<Vector3f> newP;
     for( unsigned i = 0; i < P.size()-3; ++i )
     {
         cerr << "\t>>> " << P[i] << endl;
@@ -160,37 +221,25 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
 	Vector4f p1(P[i+1],1);
 	Vector4f p2(P[i+2], 1);
 	Vector4f p3(P[i+3], 1);
-	// get benzier points
-	Curve benzierCurve = evalBezier(P, steps);
 	
-	// get T, curve = GBT
+	// get the new control points (inv) : G * Bspline * Bezier_inverse
 	Matrix4f G(p0,p1,p2,p3,true);
-	Matrix4f inv = (G * B_bezier);
-	inv.inverse(false, 0.01);
-	Vector4f T = inv * p0;
-	
-	// get Bspline points
-	Vector4f ans = G * B_bspline * T;
+	Matrix4f newG = (G * B_bezier * B_bezier_inv);
 
-	// push_back
-	Vector3f ans3f(ans.x(), ans.y(), ans.z());
-
-	Vector3f Tc = 
-
-	CurvePoint res = {
-		ans3f,
-		Tc,
-		Nc,
-		Bc};
-	curve.push_back(res);
+	for (int j = 0; j < 4; ++j) {
+		newP.push_back(newG.getCol(j).xyz());
+	}
 
 	i += 3;
     }
 
+    // using Beizer
+    Curve newCurve = evalBezier(newP, steps);
+
     cerr << "\t>>> Steps (type steps): " << steps << endl;
     cerr << "\t>>> Returning bsp curve." << endl;
 
-	return curve;
+    return newCurve;
 }
 
 Curve evalCircle( float radius, unsigned steps )
