@@ -200,10 +200,14 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
 
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
 
-    vector<Vector3f> newP;
+    Curve newCurve;
     for( unsigned i = 0; i < P.size()-3; ++i )
     {
         cerr << "\t>>> " << P[i] << endl;
+
+        vector<Vector3f> newP;
+        // 
+        
         // get 4 control points
         Vector4f p0(P[i+0],1);
         Vector4f p1(P[i+1],1);
@@ -219,10 +223,9 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
             newP.push_back(pnewX);
         }
 
-        i += 3;
+        Curve onePiece = evalBezier(newP, steps);
+        concat(newCurve, onePiece);
     }
-
-    Curve newCurve = evalBezier(newP, steps);
 
     cerr << "\t>>> Steps (type steps): " << steps << endl;
     cerr << "\t>>> Returning bsp curve." << endl;
