@@ -2,12 +2,12 @@
 #INCFLAGS += -I /mit/glut/include
 #LINKFLAGS = -L /mit/6.837/public/lib -l vecmath
 #LINKFLAGS += -L /mit/glut/lib -lGL -lGLU -lglut -lX11 -lXi
-#INCFLAGS  = -I /usr/include/GL
-INCFLAGS += -I ./vecmath/include
+INCFLAGS  = -I /usr/include/GL
+INCFLAGS += -I /mit/6.837/public/include/vecmath
 #INCFLAGS += -I ~/vecmath/include
 
 LINKFLAGS  = -lglut -lGL -lGLU
-#LINKFLAGS += -L /mit/6.837/public/lib -lvecmath
+LINKFLAGS += -L /mit/6.837/public/lib -lvecmath
 #LINKFLAGS += -L ~/vecmath/lib -lvecmath
 LINKFLAGS += -lfltk -lfltk_gl
 
@@ -15,7 +15,6 @@ CFLAGS    = -g
 CFLAGS    += -DSOLN
 CC        = g++
 SRCS      = bitmap.cpp camera.cpp MatrixStack.cpp modelerapp.cpp modelerui.cpp ModelerView.cpp Joint.cpp SkeletalModel.cpp Mesh.cpp main.cpp
-SRCS      += $(wildcard vecmath/src/*.cpp)
 OBJS      = $(SRCS:.cpp=.o)
 PROG      = a2
 
