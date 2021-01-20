@@ -1,6 +1,7 @@
 #include "SkeletalModel.h"
 
 #include <FL/Fl.H>
+#include <fstream>
 
 using namespace std;
 
@@ -42,8 +43,51 @@ void SkeletalModel::draw(Matrix4f cameraMatrix, bool skeletonVisible)
 void SkeletalModel::loadSkeleton( const char* filename )
 {
 	// Load the skeleton from file here.
+	
+	// read lines
+	char buffer[128];
+	ifstream file(filename);
+	int count = 0;
+	while (file.getline(buffer, 128)) {
+		cout << count << endl;
+		stringstream ss(buffer);
+		float x, y, z;
+		int i;
+		ss >> x >> y >> z >> i;
+		Joint *joint;
+		if (i == -1) {
+			m_rootJoint = new Joint;
+			joint = m_rootJoint;
+		} else {
+			joint = new Joint;
+		}
+		joint->transform = Matrix4f::translation(x, y, z);
+		m_joints.push_back(joint);
+
+		if (i != -1) {
+			m_joints[count]->children.push_back(m_joints[i]);
+		}
+		count++;
+	}
 }
 
+// helper method
+void plotJoint(Joint *joint, MatrixStack & matrixStack) {
+	// base case 
+	if (joint->children.size() == 0) {
+		return;
+	}
+
+	cout << joint << endl;
+	glLoadMatrixf( matrixStack.top());
+	glutSolidSphere(0.025f, 12, 12);
+	for (int i = 0; i < joint->children.size(); ++i) {
+		Matrix4f T = joint->transform;
+		matrixStack.push(T);
+		plotJoint(joint->children[i], matrixStack);
+		matrixStack.pop();
+	}
+}
 void SkeletalModel::drawJoints( )
 {
 	// Draw a sphere at each joint. You will need to add a recursive helper function to traverse the joint hierarchy.
@@ -55,11 +99,31 @@ void SkeletalModel::drawJoints( )
 	// (glPushMatrix, glPopMatrix, glMultMatrix).
 	// You should use your MatrixStack class
 	// and use glLoadMatrix() before your drawing call.
+
+	m_matrixStack = MatrixStack();
+	plotJoint(m_rootJoint, m_matrixStack);
+
 }
 
+
+void plotBones(Joint *joint, Joint *root) {
+	if (joint == root) return;
+	if (joint->children.size() == 0) return;
+
+	// plot bones
+	glutSolidCube( 1.0f );
+
+
+	for (unsigned i = 0; i < joint->children.size(); ++i) {
+		Joint *child = joint->children[i];
+		plotBones(child, root);
+	}
+
+}
 void SkeletalModel::drawSkeleton( )
 {
 	// Draw boxes between the joints. You will need to add a recursive helper function to traverse the joint hierarchy.
+	plotBones(m_rootJoint, m_rootJoint);
 }
 
 void SkeletalModel::setJointTransform(int jointIndex, float rX, float rY, float rZ)
