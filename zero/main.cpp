@@ -242,6 +242,7 @@ void drawInput() {
 int main( int argc, char** argv )
 {
 
+
     loadInput();
 
     glutInit(&argc,argv);

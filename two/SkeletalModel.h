@@ -22,7 +22,7 @@
 #include <map>
 #include <vector>
 #include <sstream>
-#include <vecmath.h>
+#include "vecmath.h"
 
 #include "tuple.h"
 #include "Joint.h"
@@ -81,6 +81,8 @@ private:
 	Mesh m_mesh;
 
 	MatrixStack m_matrixStack;
+
+	// void recDrawJoints(Joint *j);
 };
 
 #endif

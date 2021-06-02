@@ -22,6 +22,7 @@ using namespace std;
 
 int main( int argc, char* argv[] )
 {
+	cout << "start ... " << endl;
 	if( argc < 2 )
 	{
 		cout << "Usage: " << argv[ 0 ] << " PREFIX" << endl;
@@ -45,6 +46,7 @@ int main( int argc, char* argv[] )
 	string jointNames[NUM_JOINTS]={ "Root", "Chest", "Waist", "Neck", "Right hip", "Right leg", "Right knee", "Right foot", "Left hip", "Left leg", "Left knee", "Left foot", "Right collarbone", "Right shoulder", "Right elbow", "Left collarbone", "Left shoulder", "Left elbow" };
 	for(unsigned int i = 0; i < NUM_JOINTS; i++)
 	{
+		// cout << jointNames[i] << endl;
 		char buf[255];
 		sprintf(buf, "%s X", jointNames[i].c_str());
 		controls[i*3] = ModelerControl(buf, -M_PI, M_PI, 0.1f, 0);
