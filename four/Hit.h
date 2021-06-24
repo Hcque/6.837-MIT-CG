@@ -55,6 +55,15 @@ public:
     {
         return normal;
     }
+    void setT(float _t){ 
+        t = _t;
+    }
+    void setDepth(float _d){ 
+        depth = _d;
+    }
+    void setMaterial(Material *_m){ 
+        material = _m;
+    }
 
     void set( float _t, Material* m, const Vector3f& n )
     {
@@ -70,6 +79,7 @@ public:
 	Vector2f texCoord;
 private:
 	float t;
+    float depth = 0.0;
     Material* material;
     Vector3f normal;
 

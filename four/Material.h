@@ -28,6 +28,11 @@ public:
   { 
     return  diffuseColor;
   }
+
+  virtual Vector3f getSpecularColor() const 
+  { 
+    return  specularColor;
+  }
     
 
   Vector3f Shade( const Ray& ray, const Hit& hit,

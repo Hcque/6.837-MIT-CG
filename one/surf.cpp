@@ -51,6 +51,8 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
     
     // from start to end, each layer get its rotation
     // each layer has #steps of points in VV
+
+    cout << "starts  sur ..." << endl;
     vector<Vector3f> VV;
     vector<Vector3f> VN;
     vector< Tup3u > VF;

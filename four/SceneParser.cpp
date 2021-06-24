@@ -82,6 +82,7 @@ void SceneParser::parseFile() {
     //
     char token[MAX_PARSER_TOKEN_LENGTH];        
     while (getToken(token)) { 
+        // cout << "token:" << token << endl;
         if (!strcmp(token, "PerspectiveCamera")) {
             parsePerspectiveCamera();
         } else if (!strcmp(token, "Background")) {
