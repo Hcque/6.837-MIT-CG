@@ -25,7 +25,6 @@ public:
 	}
 
 	virtual bool intersect( const Ray& ray,  Hit& hit , float tmin){
-		// hit.set();
 		// cout << "Triangle " << endl;
 		
 		Vector3f Rd = ray.getDirection();
@@ -59,11 +58,13 @@ public:
 
 		if ( ! (beta >= 0 && gamma >= 0 && beta+gamma<=1 && t >= tmin && t <= hit.getT()) ) 
 			return false;
-		// cout << "t in triangle" << t 
-		// 	<< "beta: " << beta 
-		// 	<< "gamma: " << gamma << endl;
 
-		Vector3f n = (1-beta-gamma)*normals[0] + beta*normals[1] + gamma*normals[2];
+		Vector3f n = ((1-beta-gamma)*normals[0] + beta*normals[1] + gamma*normals[2]).normalized();
+		if (hasTex){
+			Vector2f new_coor = (1-beta-gamma)*texCoords[0] + beta * texCoords[1] + gamma * texCoords[2];
+			hit.setTexCoord(new_coor);
+			cout << "new coor" << new_coor[0] << endl;
+		}
 		hit.set(t, this->material, n);
 			assert (hit.getMaterial() != 0);
 		return true;

@@ -14,11 +14,6 @@ using namespace std;
 
 float clampedDepth ( float depthInput, float depthMin , float depthMax);
 
-inline float get_shade_d (Vector3f &L, Vector3f N){
-  float ans = Vector3f::dot(L, N);
-  if (ans < 0) ans = 0;
-  return ans;
-}
 
 #include "bitmap_image.hpp"
 int main( int argc, char* argv[] )
@@ -59,7 +54,13 @@ int main( int argc, char* argv[] )
     lights.push_back(sp.getLight(i));
 
   Image image(size[0], size[1]);
+  Image image_nom(size[0], size[1]);
   cout << "Construct Image "  << endl;
+
+  image.SetAllPixels(bg_color);
+  image_nom.SetAllPixels(bg_color);
+  float maxT = -1.0;
+  vector<Hit> hits;
 
   for (int x = 0; x < size[0]; x++){
     for (int y = 0; y < size[1]; y++){
@@ -73,45 +74,60 @@ int main( int argc, char* argv[] )
       // ray.getDirection().z() << " | " <<
       // endl; 
       bool has_inters = group->intersect(ray, h, camera->getTMin());
+      hits.push_back(h);
       if (has_inters){
         // cout << "h.material:" << h.getMaterial() << endl;
-        cout << "T:" << h.getT() << endl;
+        // cout << "T:" << h.getT() << endl;
         assert(h.getMaterial() != 0);
         assert(h.getT() >= camera->getTMin());
         
         Vector3f point = ray.pointAtParameter(h.getT() );
         // cout << "hit:" << h << endl;
         // set color of this pixel
-        Vector3f c_pixel = ab_light ;
+        Vector3f c_pixel = ab_light;
         // cout << "num_light: " << num_light << endl;
         for (int i = 0; i < num_light; i++){
           Vector3f dir, col;
           float distanceToLight = -1;
           lights[i]->getIllumination(point, dir, col, distanceToLight);
-          // cout << "col: " << col << "normal: " << h.getNormal() << endl;
-          // cout << "col: " << col << endl;
-          c_pixel = c_pixel + get_shade_d(dir, h.getNormal() ) * col * h.getMaterial()->getDiffuseColor();
-
-          // get specttale shader
-          Vector3f d = ray.getDirection();
-          Vector3f N = h.getNormal();
-          Vector3f R = (d + (-2.0f) * Vector3f::dot(d, N) * N) .normalized(); 
-          // c_pixel = c_pixel + pow(get_shade_d(dir, R ) * col * h.getMaterial()->getSpecularColor();
+          c_pixel = c_pixel + h.getMaterial()->Shade(ray, h, dir, col);
         }
 
-        // float tt = h.getT();
         image.SetPixel(x, y, c_pixel);
-        // cout << "color pixel:" << tt << endl;
+        image_nom.SetPixel(x, y, h.getNormal());
+
+        maxT = max(maxT, h.getT());
       }
       else {
-        image.SetPixel(x, y, bg_color); 
+        // image.SetPixel(x, y, bg_color); 
+        // image_nom.SetPixel(x, y, bg_color);
         // cout << "bg pixel:" << bg_color << endl;
       }
-
     }
   }
   image.SaveImage(output_file);
+  image_nom.SaveImage("nom.bmp");
   cout << "Image save " << output_file  << endl;
+
+  Image imagedepth(size[0], size[1]);
+  cout << "Construct Image "  << endl;
+  // depth
+  for (int x = 0; x < size[0]; x++){
+    for (int y = 0; y < size[1]; y++){
+      Hit h = hits[size[1]*x + y];
+        if (h.getMaterial() != NULL){
+          float cell = 1 - h.getT() / maxT;
+          assert (cell >= 0 && cell <= 1.0f);
+          Vector3f c_pixel(cell, cell, cell);
+          imagedepth.SetPixel(x, y, c_pixel);
+        }
+        else 
+          imagedepth.SetPixel(x, y, bg_color); 
+    }
+  }
+
+  imagedepth.SaveImage("depth.bmp");
+
   return 0;
 
   /*

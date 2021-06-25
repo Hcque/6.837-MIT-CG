@@ -21,14 +21,14 @@ public:
   virtual bool intersect( const Ray& r , Hit& h , float tmin){
 
     // cout << "trans" << endl;
-    Vector3f origin = (_m.inverse() * Vector4f( r.getOrigin(), 1.0)).xyz();
-    Vector3f dir = (_m.inverse() * Vector4f( r.getDirection(), 1.0)).xyz();
+    Vector3f origin = (_m.inverse() * Vector4f( r.getOrigin(), 1.0f)).xyz();
+    Vector3f dir = (_m.inverse() * Vector4f( r.getDirection(), 0.0f)).xyz().normalized();
     Ray trans_ray(origin, dir);
     bool hasinters = o->intersect(  trans_ray, h , tmin);
     if (! hasinters) 
       return false;
     // position, direction, normal
-    Vector3f n = ( _m.inverse().transposed() * Vector4f(h.getNormal(), 1.0)).xyz();
+    Vector3f n = ( _m.inverse().transposed() * Vector4f(h.getNormal(), 0.0)).xyz().normalized();
 
     assert (h.getMaterial() != 0);
     h.set(h.getT(), h.getMaterial(), n);

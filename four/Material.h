@@ -33,13 +33,46 @@ public:
   { 
     return  specularColor;
   }
+
+  virtual float getShine() const 
+  { 
+    return  shininess;
+  }
     
+  virtual Texture getTexture() const 
+  { 
+    return  t;
+  }
+
+inline float get_shade_d (const Vector3f &L, Vector3f N){
+  float ans = Vector3f::dot(L, N);
+  if (ans < 0) ans = 0;
+  return ans;
+}
 
   Vector3f Shade( const Ray& ray, const Hit& hit,
                   const Vector3f& dirToLight, const Vector3f& lightColor ) {
 
-    return Vector3f(1,1,1) ; 
-		
+
+    Vector3f Kd = hit.getMaterial()->getDiffuseColor();
+
+    // add texture if possiable
+    if (t.valid() && hit.hasTex){
+      Vector3f color = t(hit.texCoord[0], hit.texCoord[1]);
+      Kd = color;
+    }
+
+    Vector3f c_pixel = get_shade_d(dirToLight, hit.getNormal() ) * lightColor * Kd;
+    if (hit.getMaterial()->getShine() != 0){
+        Vector3f d = ray.getDirection().normalized();
+        Vector3f N = hit.getNormal().normalized();
+        Vector3f R = (d + (-2.0f) * Vector3f::dot(d, N) * N) .normalized(); 
+        
+        float shine = hit.getMaterial()->getShine();
+        c_pixel = c_pixel + pow(get_shade_d(dirToLight, R), shine) * lightColor * hit.getMaterial()->getSpecularColor();
+    }
+
+    return c_pixel; 
   }
 
   void loadTexture(const char * filename){

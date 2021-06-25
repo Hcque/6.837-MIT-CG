@@ -12,6 +12,7 @@
 //These function definitions are mere suggestions. Change them as you like.
 Vector3f mirrorDirection( const Vector3f& normal, const Vector3f& incoming)
 {
+  return ( incoming - 2* Vector3f::dot(incoming, normal) * normal ).normalized();
 }
 
 bool transmittedDirection( const Vector3f& normal, const Vector3f& incoming, 
@@ -37,7 +38,20 @@ RayTracer::~RayTracer()
 Vector3f RayTracer::traceRay( Ray& ray, float tmin, int bounces,
         float refr_index, Hit& hit ) const
 {
-    hit = Hit( FLT_MAX, NULL, Vector3f( 0, 0, 0 ) );
 
-    return Vector3f(0,0,0);
+    Vector3f ans(0.0, 0.0, 0.0);
+    hit = Hit( FLT_MAX, NULL, Vector3f( 0, 0, 0 ) );
+    
+    // loop each object
+
+    if (bounces >= m_maxBounces)
+      return ;// return hitted color
+    bounces++;
+    // refraction
+    ans = ans + traceRay( new_ray, tmin, bounces, ? h1);
+
+    // reflect
+    ans = ans + traceRay(new_ray, tmin, bounces, ?, h2);
+
+    return ans;
 }
