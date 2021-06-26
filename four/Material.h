@@ -7,84 +7,38 @@
 #include "Ray.h"
 #include "Hit.h"
 #include "texture.hpp"
-///TODO:
-///Implement Shade function that uses ambient, diffuse, specular and texture
+#include "Noise.h"
 class Material
 {
 public:
 	
- Material( const Vector3f& d_color ,const Vector3f& s_color=Vector3f::ZERO, float s=0):
-  diffuseColor( d_color),specularColor(s_color), shininess(s)
-  {
-        	
-  }
+	Material( const Vector3f& d_color ,const Vector3f& s_color=Vector3f::ZERO, float s=0,
+		float r =0 );
 
-  virtual ~Material()
-    {
+    virtual ~Material();
 
-    }
+    virtual Vector3f getDiffuseColor() const ;
 
-  virtual Vector3f getDiffuseColor() const 
-  { 
-    return  diffuseColor;
-  }
+    Vector3f Shade( const Ray& ray, const Hit& hit,
+            const Vector3f& dirToLight, const Vector3f& lightColor ) ;
 
-  virtual Vector3f getSpecularColor() const 
-  { 
-    return  specularColor;
-  }
+	static  Vector3f pointwiseDot( const Vector3f& v1 , const Vector3f& v2 );
 
-  virtual float getShine() const 
-  { 
-    return  shininess;
-  }
-    
-  virtual Texture getTexture() const 
-  { 
-    return  t;
-  }
+	float clampedDot( const Vector3f& L , const Vector3f& N )const;
+	void loadTexture(const char * filename);
+	float getRefractionIndex();
+	float getShine() const ;
+	Vector3f getDiffuseColor();
+	Vector3f getSpecularColor();
 
-inline float get_shade_d (const Vector3f &L, Vector3f N){
-  float ans = Vector3f::dot(L, N);
-  if (ans < 0) ans = 0;
-  return ans;
-}
-
-  Vector3f Shade( const Ray& ray, const Hit& hit,
-                  const Vector3f& dirToLight, const Vector3f& lightColor ) {
-
-
-    Vector3f Kd = hit.getMaterial()->getDiffuseColor();
-
-    // add texture if possiable
-    if (t.valid() && hit.hasTex){
-      Vector3f color = t(hit.texCoord[0], hit.texCoord[1]);
-      Kd = color;
-    }
-
-    Vector3f c_pixel = get_shade_d(dirToLight, hit.getNormal() ) * lightColor * Kd;
-    if (hit.getMaterial()->getShine() != 0){
-        Vector3f d = ray.getDirection().normalized();
-        Vector3f N = hit.getNormal().normalized();
-        Vector3f R = (d + (-2.0f) * Vector3f::dot(d, N) * N) .normalized(); 
-        
-        float shine = hit.getMaterial()->getShine();
-        c_pixel = c_pixel + pow(get_shade_d(dirToLight, R), shine) * lightColor * hit.getMaterial()->getSpecularColor();
-    }
-
-    return c_pixel; 
-  }
-
-  void loadTexture(const char * filename){
-    t.load(filename);
-  }
- protected:
+	void setNoise(const Noise & n);
+protected:
   Vector3f diffuseColor;
-  Vector3f specularColor;
+  float refractionIndex;
   float shininess;
+  Vector3f specularColor;
   Texture t;
+  Noise noise;
 };
-
-
 
 #endif // MATERIAL_H

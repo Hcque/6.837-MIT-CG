@@ -6,6 +6,8 @@
 
 #include "SceneParser.h"
 #include "Camera.h"
+#include "Noise.h"
+#include "CubeMap.h"
 #include "Light.h"
 #include "Material.h"
 #include "Object3D.h"
@@ -41,9 +43,12 @@ public:
         return camera;
     }
 
-    Vector3f getBackgroundColor() const
+    Vector3f getBackgroundColor(Vector3f dir) const
     {
-        return background_color;
+		if(cubemap ==0){
+			return background_color;
+		}
+		return cubemap->operator()(dir);
     }
 
     Vector3f getAmbientLight() const
@@ -93,6 +98,7 @@ private:
 	Light* parsePointLight();
     void parseMaterials();
     Material* parseMaterial();
+	Noise* parseNoise();
 
     Object3D* parseObject( char token[ MAX_PARSER_TOKEN_LENGTH ] );
     Group* parseGroup();
@@ -101,7 +107,7 @@ private:
     Triangle* parseTriangle();
     Mesh* parseTriangleMesh();
     Transform* parseTransform();
-
+	CubeMap * parseCubeMap();
     int getToken( char token[ MAX_PARSER_TOKEN_LENGTH ] );
     Vector3f readVector3f();
     Vector2f readVec2f();
@@ -118,6 +124,7 @@ private:
     Material** materials;
     Material* current_material;
     Group* group;
+	CubeMap * cubemap;
 };
 
 #endif // SCENE_PARSER_H

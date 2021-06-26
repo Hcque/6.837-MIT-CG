@@ -8,6 +8,7 @@
 #include "SceneParser.h"
 #include "Image.h"
 #include "Camera.h"
+#include "RayTracer.h"
 #include <string.h>
 
 using namespace std;
@@ -22,6 +23,8 @@ int main( int argc, char* argv[] )
   char* input_file;
   char* output_file;
   int size[2];
+  int bounce;
+  bool shadow;
 
   // This loop loops over each of the input arguments.
   // argNum is initialized to 1 because the first
@@ -34,6 +37,8 @@ int main( int argc, char* argv[] )
       if (strcmp(argv[argNum-1], "-size" ) == 0) size[0] = atoi( argv[argNum] );
       if (strcmp(argv[argNum-2], "-size" ) == 0) size[1] = atoi( argv[argNum] );
       if (strcmp(argv[argNum-1], "-output" ) == 0) output_file = argv[argNum];
+      if (strcmp(argv[argNum-1], "-bounces" ) == 0) bounce = atoi(argv[argNum]);
+      if (strcmp(argv[argNum], "-shadows" ) == 0) shadow = true;
     }
 	
   // First, parse the scene using SceneParser.
@@ -46,7 +51,7 @@ int main( int argc, char* argv[] )
   SceneParser sp = SceneParser(input_file);
   Camera *camera = sp.getCamera();
   Group *group = sp.getGroup();
-  Vector3f bg_color = sp.getBackgroundColor();
+  Vector3f bg_color = sp.getBackgroundColor(Vector3f(0.0, 0.0, 0.0));
   Vector3f ab_light = sp.getAmbientLight();
   int num_light = sp.getNumLights();
   vector<Light*> lights;
@@ -68,47 +73,21 @@ int main( int argc, char* argv[] )
       float x_nom = -1 + 2.0f*x / (size[0]-1);
       float y_nom = -1 + 2.0f*y / (size[1]-1);
       Ray ray = camera->generateRay(Vector2f(x_nom, y_nom));
-      // cout << "ray:" << 
-      // ray.getDirection().x() << " | " <<
-      // ray.getDirection().y() << " | " <<
-      // ray.getDirection().z() << " | " <<
-      // endl; 
-      bool has_inters = group->intersect(ray, h, camera->getTMin());
-      hits.push_back(h);
-      if (has_inters){
-        // cout << "h.material:" << h.getMaterial() << endl;
-        // cout << "T:" << h.getT() << endl;
-        assert(h.getMaterial() != 0);
-        assert(h.getT() >= camera->getTMin());
-        
-        Vector3f point = ray.pointAtParameter(h.getT() );
-        // cout << "hit:" << h << endl;
-        // set color of this pixel
-        Vector3f c_pixel = ab_light;
-        // cout << "num_light: " << num_light << endl;
-        for (int i = 0; i < num_light; i++){
-          Vector3f dir, col;
-          float distanceToLight = -1;
-          lights[i]->getIllumination(point, dir, col, distanceToLight);
-          c_pixel = c_pixel + h.getMaterial()->Shade(ray, h, dir, col);
-        }
+  
+      Vector3f c_pixel = ab_light;
+      RayTracer rt = RayTracer(&sp, 10, shadow); // 10 is max bounces
+      c_pixel = c_pixel +  rt.traceRay(ray, camera->getTMin() + 0.1, bounce, 1.0f , h);
 
-        image.SetPixel(x, y, c_pixel);
-        image_nom.SetPixel(x, y, h.getNormal());
-
-        maxT = max(maxT, h.getT());
-      }
-      else {
-        // image.SetPixel(x, y, bg_color); 
-        // image_nom.SetPixel(x, y, bg_color);
-        // cout << "bg pixel:" << bg_color << endl;
-      }
+      image.SetPixel(x, y, c_pixel);
+      image_nom.SetPixel(x, y, h.getNormal());
+      maxT = max(maxT, h.getT());
     }
   }
   image.SaveImage(output_file);
   image_nom.SaveImage("nom.bmp");
   cout << "Image save " << output_file  << endl;
 
+/*
   Image imagedepth(size[0], size[1]);
   cout << "Construct Image "  << endl;
   // depth
@@ -127,18 +106,8 @@ int main( int argc, char* argv[] )
   }
 
   imagedepth.SaveImage("depth.bmp");
-
-  return 0;
-
-  /*
-  ///TODO: below demonstrates how to use the provided Image class
-  ///Should be removed when you start
-  Vector3f pixelColor (1.0f,0,0);
-  //width and height
-  Image image( 10 , 15 );
-  image.SetPixel( 5,5, pixelColor );
-  image.SaveImage("demo.bmp");
-  return 0;
   */
+
+  return 0;
 }
 

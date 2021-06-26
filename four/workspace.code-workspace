@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "tex"
+		},
+		{
+			"path": "vecmath"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"deque": "cpp",
+			"string": "cpp",
+			"vector": "cpp",
+			"iostream": "cpp",
+			"ostream": "cpp"
+		}
+	}
+}

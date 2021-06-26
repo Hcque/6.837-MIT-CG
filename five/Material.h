@@ -38,6 +38,7 @@ protected:
   Vector3f specularColor;
   Texture t;
   Noise noise;
+  int refra_idx;
 };
 
 #endif // MATERIAL_H
