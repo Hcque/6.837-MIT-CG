@@ -1,13 +1,17 @@
-INCFLAGS  = -I vecmath/include
-INCFLAGS += -I /usr/include/GL
+# INCFLAGS  = -I vecmath/include
+INCFLAGS  = -I /usr/include/GL
+# INCFLAGS += -I /usr/include/GL
+INCFLAGS += -I 	./include/vecmath
 
-LINKFLAGS = -L. -lRK4 -lglut -lGL -lGLU -fPIE
-CFLAGS    = -g -Wall -ansi -fPIE
+LINKFLAGS = -lglut -lGL -lGLU -L. -lRK4 -no-pie
+CFLAGS    = -g -Wall -ansi 
 CC        = g++
 SRCS      = $(wildcard *.cpp)
 SRCS     += $(wildcard vecmath/src/*.cpp)
 OBJS      = $(SRCS:.cpp=.o)
 PROG      = a3
+
+# OBJS += main.o
 
 all: $(SRCS) $(PROG)
 
@@ -22,3 +26,22 @@ depend:
 
 clean:
 	rm $(OBJS) $(PROG)
+
+
+# main.o: ./include/vecmath/vecmath.h ./include/vecmath/Matrix2f.h
+# main.o: ./include/vecmath/Matrix3f.h ./include/vecmath/Matrix4f.h
+# main.o: ./include/vecmath/Quat4f.h ./include/vecmath/Vector2f.h
+# main.o: ./include/vecmath/Vector3f.h ./include/vecmath/Vector4f.h
+vecmath/Vector3f.o: ./include/vecmath/Vector3f.h ./include/vecmath/Vector2f.h
+vecmath/Vector2f.o: ./include/vecmath/Vector2f.h ./include/vecmath/Vector3f.h
+vecmath/Matrix3f.o: ./include/vecmath/Matrix3f.h ./include/vecmath/Matrix2f.h
+vecmath/Matrix3f.o: ./include/vecmath/Quat4f.h ./include/vecmath/Vector3f.h
+vecmath/Matrix4f.o: ./include/vecmath/Matrix4f.h ./include/vecmath/Matrix2f.h
+vecmath/Matrix4f.o: ./include/vecmath/Matrix3f.h ./include/vecmath/Quat4f.h
+vecmath/Matrix4f.o: ./include/vecmath/Vector3f.h ./include/vecmath/Vector4f.h
+vecmath/Vector4f.o: ./include/vecmath/Vector4f.h ./include/vecmath/Vector2f.h
+vecmath/Vector4f.o: ./include/vecmath/Vector3f.h
+vecmath/Quat4f.o: ./include/vecmath/Quat4f.h ./include/vecmath/Matrix3f.h
+vecmath/Quat4f.o: ./include/vecmath/Vector3f.h ./include/vecmath/Vector4f.h
+vecmath/Matrix2f.o: ./include/vecmath/Matrix2f.h ./include/vecmath/Vector2f.h
+

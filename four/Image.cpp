@@ -312,6 +312,17 @@ Image::SaveBMP(const char *filename)
 
     return(1);
 }
+Vector3f aver(int x, int y){
+    
+}
+
+Vector3f Image::operator()(int x, int y){
+    if (x < 0) x = 0;
+    if (x >= this->width) x = this->width-1;
+    if (y < 0) y = 0;
+    if (y >= this->height) y = this->height-1;
+    return this->GetPixel(x, y);
+}
 
 void Image::SaveImage(const char * filename)
 {

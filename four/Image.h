@@ -63,6 +63,8 @@ public:
 	void SaveImage(const char *filename);
     // extension for image comparison
     static Image* compare( Image* img1, Image* img2 );
+    Vector3f operator()(int x, int y);
+    Vector3f aver(int x, int y);
 
 private:
 
